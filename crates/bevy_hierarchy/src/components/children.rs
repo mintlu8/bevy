@@ -1,10 +1,7 @@
 #[cfg(feature = "reflect")]
 use bevy_ecs::reflect::{ReflectComponent, ReflectMapEntities};
 use bevy_ecs::{
-    component::Component,
-    entity::{Entity, EntityMapper, MapEntities},
-    prelude::FromWorld,
-    world::World,
+    component::Component, entity::{Entity, EntityMapper, MapEntities}, prelude::FromWorld, query::QueryData, world::World
 };
 use core::slice;
 use smallvec::SmallVec;
@@ -26,9 +23,14 @@ use std::ops::Deref;
 #[derive(Component, Debug)]
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
 #[cfg_attr(feature = "reflect", reflect(Component, MapEntities))]
-pub struct Children(pub(crate) SmallVec<[Entity; 8]>);
+pub(crate) struct ChildrenInner(pub(crate) SmallVec<[Entity; 8]>);
 
-impl MapEntities for Children {
+#[derive(Debug, QueryData)]
+pub struct Children<'w, 's> {
+    children: Option<&'w ChildrenInner>,
+}
+
+impl MapEntities for ChildrenInner {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         for entity in &mut self.0 {
             *entity = entity_mapper.map_entity(*entity);
@@ -40,14 +42,14 @@ impl MapEntities for Children {
 // This is because Reflect deserialize by creating an instance and apply a patch on top.
 // However Children should only ever be set with a real user-defined entities. Its worth looking
 // into better ways to handle cases like this.
-impl FromWorld for Children {
+impl FromWorld for ChildrenInner {
     #[inline]
     fn from_world(_world: &mut World) -> Self {
-        Children(SmallVec::new())
+        ChildrenInner(SmallVec::new())
     }
 }
 
-impl Children {
+impl ChildrenInner {
     /// Constructs a [`Children`] component with the given entities.
     #[inline]
     pub(crate) fn from_entities(entities: &[Entity]) -> Self {
@@ -143,7 +145,7 @@ impl Children {
     }
 }
 
-impl Deref for Children {
+impl Deref for ChildrenInner {
     type Target = [Entity];
 
     #[inline(always)]
@@ -152,7 +154,7 @@ impl Deref for Children {
     }
 }
 
-impl<'a> IntoIterator for &'a Children {
+impl<'a> IntoIterator for &'a ChildrenInner {
     type Item = <Self::IntoIter as Iterator>::Item;
 
     type IntoIter = slice::Iter<'a, Entity>;

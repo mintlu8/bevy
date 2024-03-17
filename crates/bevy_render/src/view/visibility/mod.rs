@@ -6,7 +6,7 @@ pub use render_layers::*;
 use bevy_app::{Plugin, PostUpdate};
 use bevy_asset::{Assets, Handle};
 use bevy_ecs::prelude::*;
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::{ChildrenInner, Parent};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_transform::{components::GlobalTransform, TransformSystem};
 use bevy_utils::Parallel;
@@ -288,11 +288,11 @@ pub fn update_frusta<T: Component + CameraProjection + Send + Sync + 'static>(
 
 fn visibility_propagate_system(
     changed: Query<
-        (Entity, &Visibility, Option<&Parent>, Option<&Children>),
+        (Entity, &Visibility, Option<&Parent>, Option<&ChildrenInner>),
         (With<InheritedVisibility>, Changed<Visibility>),
     >,
     mut visibility_query: Query<(&Visibility, &mut InheritedVisibility)>,
-    children_query: Query<&Children, (With<Visibility>, With<InheritedVisibility>)>,
+    children_query: Query<&ChildrenInner, (With<Visibility>, With<InheritedVisibility>)>,
 ) {
     for (entity, visibility, parent, children) in &changed {
         let is_visible = match visibility {
@@ -326,7 +326,7 @@ fn propagate_recursive(
     parent_is_visible: bool,
     entity: Entity,
     visibility_query: &mut Query<(&Visibility, &mut InheritedVisibility)>,
-    children_query: &Query<&Children, (With<Visibility>, With<InheritedVisibility>)>,
+    children_query: &Query<&ChildrenInner, (With<Visibility>, With<InheritedVisibility>)>,
     // BLOCKED: https://github.com/rust-lang/rust/issues/31436
     // We use a result here to use the `?` operator. Ideally we'd use a try block instead
 ) -> Result<(), ()> {

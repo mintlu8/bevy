@@ -6,7 +6,7 @@ use bevy_ecs::{
     system::Query,
 };
 
-use crate::{Children, Parent};
+use crate::{ChildrenInner, Parent};
 
 /// An extension trait for [`Query`] that adds hierarchy related methods.
 pub trait HierarchyQueryExt<'w, 's, D: QueryData, F: QueryFilter> {
@@ -32,7 +32,7 @@ pub trait HierarchyQueryExt<'w, 's, D: QueryData, F: QueryFilter> {
     /// ```
     fn iter_descendants(&'w self, entity: Entity) -> DescendantIter<'w, 's, D, F>
     where
-        D::ReadOnly: WorldQuery<Item<'w> = &'w Children>;
+        D::ReadOnly: WorldQuery<Item<'w> = &'w ChildrenInner>;
 
     /// Returns an [`Iterator`] of [`Entity`]s over all of `entity`s ancestors.
     ///
@@ -60,7 +60,7 @@ pub trait HierarchyQueryExt<'w, 's, D: QueryData, F: QueryFilter> {
 impl<'w, 's, D: QueryData, F: QueryFilter> HierarchyQueryExt<'w, 's, D, F> for Query<'w, 's, D, F> {
     fn iter_descendants(&'w self, entity: Entity) -> DescendantIter<'w, 's, D, F>
     where
-        D::ReadOnly: WorldQuery<Item<'w> = &'w Children>,
+        D::ReadOnly: WorldQuery<Item<'w> = &'w ChildrenInner>,
     {
         DescendantIter::new(self, entity)
     }
@@ -78,7 +78,7 @@ impl<'w, 's, D: QueryData, F: QueryFilter> HierarchyQueryExt<'w, 's, D, F> for Q
 /// Traverses the hierarchy breadth-first.
 pub struct DescendantIter<'w, 's, D: QueryData, F: QueryFilter>
 where
-    D::ReadOnly: WorldQuery<Item<'w> = &'w Children>,
+    D::ReadOnly: WorldQuery<Item<'w> = &'w ChildrenInner>,
 {
     children_query: &'w Query<'w, 's, D, F>,
     vecdeque: VecDeque<Entity>,
@@ -86,7 +86,7 @@ where
 
 impl<'w, 's, D: QueryData, F: QueryFilter> DescendantIter<'w, 's, D, F>
 where
-    D::ReadOnly: WorldQuery<Item<'w> = &'w Children>,
+    D::ReadOnly: WorldQuery<Item<'w> = &'w ChildrenInner>,
 {
     /// Returns a new [`DescendantIter`].
     pub fn new(children_query: &'w Query<'w, 's, D, F>, entity: Entity) -> Self {
@@ -104,7 +104,7 @@ where
 
 impl<'w, 's, D: QueryData, F: QueryFilter> Iterator for DescendantIter<'w, 's, D, F>
 where
-    D::ReadOnly: WorldQuery<Item<'w> = &'w Children>,
+    D::ReadOnly: WorldQuery<Item<'w> = &'w ChildrenInner>,
 {
     type Item = Entity;
 
@@ -161,7 +161,7 @@ mod tests {
         world::World,
     };
 
-    use crate::{query_extension::HierarchyQueryExt, BuildWorldChildren, Children, Parent};
+    use crate::{query_extension::HierarchyQueryExt, BuildWorldChildren, ChildrenInner, Parent};
 
     #[derive(Component, PartialEq, Debug)]
     struct A(usize);
@@ -175,7 +175,7 @@ mod tests {
         world.entity_mut(a).push_children(&[b, c]);
         world.entity_mut(c).push_children(&[d]);
 
-        let mut system_state = SystemState::<(Query<&Children>, Query<&A>)>::new(world);
+        let mut system_state = SystemState::<(Query<&ChildrenInner>, Query<&A>)>::new(world);
         let (children_query, a_query) = system_state.get(world);
 
         let result: Vec<_> = a_query

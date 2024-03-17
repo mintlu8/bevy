@@ -8,7 +8,7 @@ use bevy_ecs::{
     query::{Changed, With, Without},
     system::{Commands, Query},
 };
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::{ChildrenInner, Parent};
 use bevy_math::Rect;
 use bevy_transform::components::GlobalTransform;
 use bevy_utils::HashSet;
@@ -18,7 +18,7 @@ pub fn update_clipping_system(
     mut commands: Commands,
     root_node_query: Query<Entity, (With<Node>, Without<Parent>)>,
     mut node_query: Query<(&Node, &GlobalTransform, &Style, Option<&mut CalculatedClip>)>,
-    children_query: Query<&Children>,
+    children_query: Query<&ChildrenInner>,
 ) {
     for root_node in &root_node_query {
         update_clipping(
@@ -33,7 +33,7 @@ pub fn update_clipping_system(
 
 fn update_clipping(
     commands: &mut Commands,
-    children_query: &Query<&Children>,
+    children_query: &Query<&ChildrenInner>,
     node_query: &mut Query<(&Node, &GlobalTransform, &Style, Option<&mut CalculatedClip>)>,
     entity: Entity,
     mut maybe_inherited_clip: Option<Rect>,
@@ -105,8 +105,8 @@ pub fn update_target_camera_system(
         (Entity, Option<&TargetCamera>),
         (With<Node>, Without<Parent>, Changed<TargetCamera>),
     >,
-    changed_children_query: Query<(Entity, Option<&TargetCamera>), (With<Node>, Changed<Children>)>,
-    children_query: Query<&Children, With<Node>>,
+    changed_children_query: Query<(Entity, Option<&TargetCamera>), (With<Node>, Changed<ChildrenInner>)>,
+    children_query: Query<&ChildrenInner, With<Node>>,
     node_query: Query<Option<&TargetCamera>, With<Node>>,
 ) {
     // Track updated entities to prevent redundant updates, as `Commands` changes are deferred,
@@ -145,7 +145,7 @@ fn update_children_target_camera(
     entity: Entity,
     camera_to_set: Option<&TargetCamera>,
     node_query: &Query<Option<&TargetCamera>, With<Node>>,
-    children_query: &Query<&Children, With<Node>>,
+    children_query: &Query<&ChildrenInner, With<Node>>,
     commands: &mut Commands,
     updated_entities: &mut HashSet<Entity>,
 ) {

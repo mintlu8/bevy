@@ -941,7 +941,7 @@ impl World {
     /// assert!(world.get::<Position>(entity).is_none());
     /// ```
     #[inline]
-    pub fn despawn(&mut self, entity: Entity) -> bool {
+    pub unsafe fn despawn(&mut self, entity: Entity) -> bool {
         if let Some(entity) = self.get_entity_mut(entity) {
             entity.despawn();
             true
@@ -2765,7 +2765,7 @@ mod tests {
         assert_eq!(entity_counters.len(), 4);
 
         // Despawning first entity and then validating the iteration
-        assert!(world.despawn(ent0));
+        assert!(unsafe {world.despawn(ent0)});
 
         iterate_and_count_entities(&world, &mut entity_counters);
 
@@ -2779,9 +2779,9 @@ mod tests {
         let ent5 = world.spawn(Bar).id();
         let ent6 = world.spawn(Baz).id();
 
-        assert!(world.despawn(ent2));
-        assert!(world.despawn(ent3));
-        assert!(world.despawn(ent4));
+        assert!(unsafe {world.despawn(ent2)});
+        assert!(unsafe {world.despawn(ent3)});
+        assert!(unsafe {world.despawn(ent4)});
 
         iterate_and_count_entities(&world, &mut entity_counters);
 
@@ -2791,9 +2791,9 @@ mod tests {
         assert_eq!(entity_counters.len(), 3);
 
         // Despawning remaining entities and then validating the iteration
-        assert!(world.despawn(ent1));
-        assert!(world.despawn(ent5));
-        assert!(world.despawn(ent6));
+        assert!(unsafe {world.despawn(ent1)} );
+        assert!(unsafe {world.despawn(ent5)} );
+        assert!(unsafe {world.despawn(ent6)} );
 
         iterate_and_count_entities(&world, &mut entity_counters);
 

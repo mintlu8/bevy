@@ -6,7 +6,7 @@ use bevy_ecs::{
     removal_detection::RemovedComponents,
     system::{Local, ParamSet},
 };
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::{ChildrenInner, Parent};
 
 /// Update [`GlobalTransform`] component of entities that aren't in the hierarchy
 ///
@@ -18,10 +18,10 @@ pub fn sync_simple_transforms(
             (
                 Or<(Changed<Transform>, Added<GlobalTransform>)>,
                 Without<Parent>,
-                Without<Children>,
+                Without<ChildrenInner>,
             ),
         >,
-        Query<(Ref<Transform>, &mut GlobalTransform), (Without<Parent>, Without<Children>)>,
+        Query<(Ref<Transform>, &mut GlobalTransform), (Without<Parent>, Without<ChildrenInner>)>,
     )>,
     mut orphaned: RemovedComponents<Parent>,
 ) {
@@ -48,11 +48,11 @@ pub fn sync_simple_transforms(
 /// Third party plugins should ensure that this is used in concert with [`sync_simple_transforms`].
 pub fn propagate_transforms(
     mut root_query: Query<
-        (Entity, &Children, Ref<Transform>, &mut GlobalTransform),
+        (Entity, &ChildrenInner, Ref<Transform>, &mut GlobalTransform),
         Without<Parent>,
     >,
     mut orphaned: RemovedComponents<Parent>,
-    transform_query: Query<(Ref<Transform>, &mut GlobalTransform, Option<&Children>), With<Parent>>,
+    transform_query: Query<(Ref<Transform>, &mut GlobalTransform, Option<&ChildrenInner>), With<Parent>>,
     parent_query: Query<(Entity, Ref<Parent>)>,
     mut orphaned_entities: Local<Vec<Entity>>,
 ) {
@@ -109,7 +109,7 @@ pub fn propagate_transforms(
 unsafe fn propagate_recursive(
     parent: &GlobalTransform,
     transform_query: &Query<
-        (Ref<Transform>, &mut GlobalTransform, Option<&Children>),
+        (Ref<Transform>, &mut GlobalTransform, Option<&ChildrenInner>),
         With<Parent>,
     >,
     parent_query: &Query<(Entity, Ref<Parent>)>,
@@ -189,7 +189,7 @@ mod test {
     use crate::components::{GlobalTransform, Transform};
     use crate::systems::*;
     use crate::TransformBundle;
-    use bevy_hierarchy::{BuildChildren, BuildWorldChildren, Children, Parent};
+    use bevy_hierarchy::{BuildChildren, BuildWorldChildren, ChildrenInner, Parent};
 
     #[test]
     fn correct_parent_removed() {
@@ -349,7 +349,7 @@ mod test {
 
         assert_eq!(
             world
-                .get::<Children>(parent)
+                .get::<ChildrenInner>(parent)
                 .unwrap()
                 .iter()
                 .cloned()
@@ -368,7 +368,7 @@ mod test {
 
         assert_eq!(
             world
-                .get::<Children>(parent)
+                .get::<ChildrenInner>(parent)
                 .unwrap()
                 .iter()
                 .cloned()
@@ -378,7 +378,7 @@ mod test {
 
         assert_eq!(
             world
-                .get::<Children>(children[1])
+                .get::<ChildrenInner>(children[1])
                 .unwrap()
                 .iter()
                 .cloned()
@@ -392,7 +392,7 @@ mod test {
 
         assert_eq!(
             world
-                .get::<Children>(parent)
+                .get::<ChildrenInner>(parent)
                 .unwrap()
                 .iter()
                 .cloned()
@@ -432,8 +432,8 @@ mod test {
         app.update();
 
         // check the `Children` structure is spawned
-        assert_eq!(&**app.world.get::<Children>(parent).unwrap(), &[child]);
-        assert_eq!(&**app.world.get::<Children>(child).unwrap(), &[grandchild]);
+        assert_eq!(&**app.world.get::<ChildrenInner>(parent).unwrap(), &[child]);
+        assert_eq!(&**app.world.get::<ChildrenInner>(child).unwrap(), &[grandchild]);
         // Note that at this point, the `GlobalTransform`s will not have updated yet, due to `Commands` delay
         app.update();
 

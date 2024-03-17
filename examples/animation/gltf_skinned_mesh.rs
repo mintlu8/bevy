@@ -47,7 +47,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn joint_animation(
     time: Res<Time>,
     parent_query: Query<&Parent, With<SkinnedMesh>>,
-    children_query: Query<&Children>,
+    children_query: Query<&ChildrenInner>,
     mut transform_query: Query<&mut Transform>,
 ) {
     // Iter skinned mesh entity

@@ -14,12 +14,12 @@ use bevy_ecs::{
     system::{Commands, Query},
     world::Ref,
 };
-use bevy_hierarchy::Children;
+use bevy_hierarchy::ChildrenInner;
 use bevy_render::{camera::CameraUpdateSystem, prelude::Camera};
 use bevy_text::Text;
 use bevy_transform::prelude::GlobalTransform;
 
-fn calc_name(texts: &Query<&Text>, children: &Children) -> Option<Box<str>> {
+fn calc_name(texts: &Query<&Text>, children: &ChildrenInner) -> Option<Box<str>> {
     let mut name = None;
     for child in children {
         if let Ok(text) = texts.get(*child) {
@@ -59,7 +59,7 @@ fn calc_bounds(
 
 fn button_changed(
     mut commands: Commands,
-    mut query: Query<(Entity, &Children, Option<&mut AccessibilityNode>), Changed<Button>>,
+    mut query: Query<(Entity, &ChildrenInner, Option<&mut AccessibilityNode>), Changed<Button>>,
     texts: Query<&Text>,
 ) {
     for (entity, children, accessible) in &mut query {
@@ -86,7 +86,7 @@ fn button_changed(
 fn image_changed(
     mut commands: Commands,
     mut query: Query<
-        (Entity, &Children, Option<&mut AccessibilityNode>),
+        (Entity, &ChildrenInner, Option<&mut AccessibilityNode>),
         (Changed<UiImage>, Without<Button>),
     >,
     texts: Query<&Text>,

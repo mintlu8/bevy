@@ -1,4 +1,4 @@
-use crate::{Children, HierarchyEvent, Parent};
+use crate::{ChildrenInner, HierarchyEvent, Parent};
 use bevy_ecs::{
     bundle::Bundle,
     entity::Entity,
@@ -21,10 +21,10 @@ fn push_events(world: &mut World, events: impl IntoIterator<Item = HierarchyEven
 /// This might cause unexpected results when removing duplicate children.
 fn push_child_unchecked(world: &mut World, parent: Entity, child: Entity) {
     let mut parent = world.entity_mut(parent);
-    if let Some(mut children) = parent.get_mut::<Children>() {
+    if let Some(mut children) = parent.get_mut::<ChildrenInner>() {
         children.0.push(child);
     } else {
-        parent.insert(Children(smallvec![child]));
+        parent.insert(ChildrenInner(smallvec![child]));
     }
 }
 
@@ -48,12 +48,12 @@ fn remove_from_children(world: &mut World, parent: Entity, child: Entity) {
     let Some(mut parent) = world.get_entity_mut(parent) else {
         return;
     };
-    let Some(mut children) = parent.get_mut::<Children>() else {
+    let Some(mut children) = parent.get_mut::<ChildrenInner>() else {
         return;
     };
     children.0.retain(|x| *x != child);
     if children.is_empty() {
-        parent.remove::<Children>();
+        parent.remove::<ChildrenInner>();
     }
 }
 
@@ -121,7 +121,7 @@ fn update_old_parents(world: &mut World, parent: Entity, children: &[Entity]) {
 /// Also removes [`Parent`] component from `children`.
 fn remove_children(parent: Entity, children: &[Entity], world: &mut World) {
     let mut events: SmallVec<[HierarchyEvent; 8]> = SmallVec::new();
-    if let Some(parent_children) = world.get::<Children>(parent) {
+    if let Some(parent_children) = world.get::<ChildrenInner>(parent) {
         for &child in children {
             if parent_children.contains(&child) {
                 events.push(HierarchyEvent::ChildRemoved { child, parent });
@@ -138,13 +138,13 @@ fn remove_children(parent: Entity, children: &[Entity], world: &mut World) {
     push_events(world, events);
 
     let mut parent = world.entity_mut(parent);
-    if let Some(mut parent_children) = parent.get_mut::<Children>() {
+    if let Some(mut parent_children) = parent.get_mut::<ChildrenInner>() {
         parent_children
             .0
             .retain(|parent_child| !children.contains(parent_child));
 
         if parent_children.is_empty() {
-            parent.remove::<Children>();
+            parent.remove::<ChildrenInner>();
         }
     }
 }
@@ -152,7 +152,7 @@ fn remove_children(parent: Entity, children: &[Entity], world: &mut World) {
 /// Removes all children from `parent` by removing its [`Children`] component, as well as removing
 /// [`Parent`] component from its children.
 fn clear_children(parent: Entity, world: &mut World) {
-    if let Some(children) = world.entity_mut(parent).take::<Children>() {
+    if let Some(children) = world.entity_mut(parent).take::<ChildrenInner>() {
         for &child in &children.0 {
             world.entity_mut(child).remove::<Parent>();
         }
@@ -602,11 +602,11 @@ impl<'w> BuildWorldChildren for EntityWorldMut<'w> {
         self.world_scope(|world| {
             update_old_parent(world, child, parent);
         });
-        if let Some(mut children_component) = self.get_mut::<Children>() {
+        if let Some(mut children_component) = self.get_mut::<ChildrenInner>() {
             children_component.0.retain(|value| child != *value);
             children_component.0.push(child);
         } else {
-            self.insert(Children::from_entities(&[child]));
+            self.insert(ChildrenInner::from_entities(&[child]));
         }
         self
     }
@@ -619,13 +619,13 @@ impl<'w> BuildWorldChildren for EntityWorldMut<'w> {
         self.world_scope(|world| {
             update_old_parents(world, parent, children);
         });
-        if let Some(mut children_component) = self.get_mut::<Children>() {
+        if let Some(mut children_component) = self.get_mut::<ChildrenInner>() {
             children_component
                 .0
                 .retain(|value| !children.contains(value));
             children_component.0.extend(children.iter().cloned());
         } else {
-            self.insert(Children::from_entities(children));
+            self.insert(ChildrenInner::from_entities(children));
         }
         self
     }
@@ -638,13 +638,13 @@ impl<'w> BuildWorldChildren for EntityWorldMut<'w> {
         self.world_scope(|world| {
             update_old_parents(world, parent, children);
         });
-        if let Some(mut children_component) = self.get_mut::<Children>() {
+        if let Some(mut children_component) = self.get_mut::<ChildrenInner>() {
             children_component
                 .0
                 .retain(|value| !children.contains(value));
             children_component.0.insert_from_slice(index, children);
         } else {
-            self.insert(Children::from_entities(children));
+            self.insert(ChildrenInner::from_entities(children));
         }
         self
     }
@@ -693,7 +693,7 @@ impl<'w> BuildWorldChildren for EntityWorldMut<'w> {
 mod tests {
     use super::{BuildChildren, BuildWorldChildren};
     use crate::{
-        components::{Children, Parent},
+        components::{ChildrenInner, Parent},
         HierarchyEvent::{self, ChildAdded, ChildMoved, ChildRemoved},
     };
     use smallvec::{smallvec, SmallVec};
@@ -713,7 +713,7 @@ mod tests {
 
     /// Assert the (non)existence and state of the parent's [`Children`] component.
     fn assert_children(world: &World, parent: Entity, children: Option<&[Entity]>) {
-        assert_eq!(world.get::<Children>(parent).map(|c| &**c), children);
+        assert_eq!(world.get::<ChildrenInner>(parent).map(|c| &**c), children);
     }
 
     /// Used to omit a number of events that are not relevant to a particular test.
@@ -872,7 +872,7 @@ mod tests {
 
         queue.apply(&mut world);
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.as_slice(),
+            world.get::<ChildrenInner>(parent).unwrap().0.as_slice(),
             children.as_slice(),
         );
         assert_eq!(*world.get::<Parent>(children[0]).unwrap(), Parent(parent));
@@ -904,7 +904,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -921,7 +921,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child3, child4, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child3).unwrap(), Parent(parent));
@@ -936,7 +936,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child3, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert!(world.get::<Parent>(child1).is_none());
@@ -963,7 +963,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -975,7 +975,7 @@ mod tests {
         }
         queue.apply(&mut world);
 
-        assert!(world.get::<Children>(parent).is_none());
+        assert!(world.get::<ChildrenInner>(parent).is_none());
 
         assert!(world.get::<Parent>(child1).is_none());
         assert!(world.get::<Parent>(child2).is_none());
@@ -1002,7 +1002,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -1017,7 +1017,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child4];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -1042,7 +1042,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -1051,7 +1051,7 @@ mod tests {
         world.entity_mut(parent).insert_children(1, &entities[3..]);
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child3, child4, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child3).unwrap(), Parent(parent));
@@ -1061,7 +1061,7 @@ mod tests {
         world.entity_mut(parent).remove_children(&remove_children);
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child3, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert!(world.get::<Parent>(child1).is_none());
@@ -1083,14 +1083,14 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
         assert_eq!(*world.get::<Parent>(child2).unwrap(), Parent(parent));
 
         world.entity_mut(parent).clear_children();
-        assert!(world.get::<Children>(parent).is_none());
+        assert!(world.get::<ChildrenInner>(parent).is_none());
         assert!(world.get::<Parent>(child1).is_none());
         assert!(world.get::<Parent>(child2).is_none());
     }
@@ -1112,7 +1112,7 @@ mod tests {
 
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child1, child2];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert_eq!(*world.get::<Parent>(child1).unwrap(), Parent(parent));
@@ -1121,7 +1121,7 @@ mod tests {
         world.entity_mut(parent).replace_children(&entities[2..]);
         let expected_children: SmallVec<[Entity; 8]> = smallvec![child2, child3, child4];
         assert_eq!(
-            world.get::<Children>(parent).unwrap().0.clone(),
+            world.get::<ChildrenInner>(parent).unwrap().0.clone(),
             expected_children
         );
         assert!(world.get::<Parent>(child1).is_none());
@@ -1145,21 +1145,21 @@ mod tests {
         // push child into parent1
         world.entity_mut(parent1).push_children(&[child]);
         assert_eq!(
-            world.get::<Children>(parent1).unwrap().0.as_slice(),
+            world.get::<ChildrenInner>(parent1).unwrap().0.as_slice(),
             &[child]
         );
 
         // move only child from parent1 with `push_children`
         world.entity_mut(parent2).push_children(&[child]);
-        assert!(world.get::<Children>(parent1).is_none());
+        assert!(world.get::<ChildrenInner>(parent1).is_none());
 
         // move only child from parent2 with `insert_children`
         world.entity_mut(parent1).insert_children(0, &[child]);
-        assert!(world.get::<Children>(parent2).is_none());
+        assert!(world.get::<ChildrenInner>(parent2).is_none());
 
         // remove only child from parent1 with `remove_children`
         world.entity_mut(parent1).remove_children(&[child]);
-        assert!(world.get::<Children>(parent1).is_none());
+        assert!(world.get::<ChildrenInner>(parent1).is_none());
     }
 
     /// Tests what happens when all children are removed form a parent using commands
@@ -1183,7 +1183,7 @@ mod tests {
             queue.apply(&mut world);
         }
         assert_eq!(
-            world.get::<Children>(parent1).unwrap().0.as_slice(),
+            world.get::<ChildrenInner>(parent1).unwrap().0.as_slice(),
             &[child]
         );
 
@@ -1193,7 +1193,7 @@ mod tests {
             commands.entity(parent2).push_children(&[child]);
             queue.apply(&mut world);
         }
-        assert!(world.get::<Children>(parent1).is_none());
+        assert!(world.get::<ChildrenInner>(parent1).is_none());
 
         // move only child from parent2 with `insert_children`
         {
@@ -1201,7 +1201,7 @@ mod tests {
             commands.entity(parent1).insert_children(0, &[child]);
             queue.apply(&mut world);
         }
-        assert!(world.get::<Children>(parent2).is_none());
+        assert!(world.get::<ChildrenInner>(parent2).is_none());
 
         // move only child from parent1 with `add_child`
         {
@@ -1209,7 +1209,7 @@ mod tests {
             commands.entity(parent2).add_child(child);
             queue.apply(&mut world);
         }
-        assert!(world.get::<Children>(parent1).is_none());
+        assert!(world.get::<ChildrenInner>(parent1).is_none());
 
         // remove only child from parent2 with `remove_children`
         {
@@ -1217,7 +1217,7 @@ mod tests {
             commands.entity(parent2).remove_children(&[child]);
             queue.apply(&mut world);
         }
-        assert!(world.get::<Children>(parent2).is_none());
+        assert!(world.get::<ChildrenInner>(parent2).is_none());
     }
 
     #[test]
@@ -1237,7 +1237,7 @@ mod tests {
             .push_children(&[child])
             .id();
 
-        let mut query = world.query::<&Children>();
+        let mut query = world.query::<&ChildrenInner>();
         let children = query.get(&world, parent).unwrap();
         assert_eq!(**children, [child]);
     }

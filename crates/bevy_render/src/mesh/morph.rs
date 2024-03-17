@@ -7,7 +7,7 @@ use crate::{
 use bevy_app::{Plugin, PostUpdate};
 use bevy_asset::Handle;
 use bevy_ecs::prelude::*;
-use bevy_hierarchy::Children;
+use bevy_hierarchy::ChildrenInner;
 use bevy_math::Vec3;
 use bevy_reflect::Reflect;
 use bytemuck::{Pod, Zeroable};
@@ -198,7 +198,7 @@ impl MeshMorphWeights {
 ///
 /// Only direct children are updated, to fulfill the expectations of glTF spec.
 pub fn inherit_weights(
-    morph_nodes: Query<(&Children, &MorphWeights), (Without<Handle<Mesh>>, Changed<MorphWeights>)>,
+    morph_nodes: Query<(&ChildrenInner, &MorphWeights), (Without<Handle<Mesh>>, Changed<MorphWeights>)>,
     mut morph_primitives: Query<&mut MeshMorphWeights, With<Handle<Mesh>>>,
 ) {
     for (children, parent_weights) in &morph_nodes {

@@ -298,7 +298,7 @@ fn update_buttons(
     >,
     mut bar_query: Query<&mut Style, With<Bar>>,
     mut text_query: Query<&mut Text>,
-    children_query: Query<&Children>,
+    children_query: Query<&ChildrenInner>,
     mut button_activated_event: EventWriter<ButtonActivatedEvent>,
 ) {
     let mut style = bar_query.single_mut();
@@ -361,7 +361,7 @@ fn update_radio_buttons_colors(
     mut image_query: Query<&mut UiImage>,
     mut color_query: Query<&mut BackgroundColor>,
     mut text_query: Query<&mut Text>,
-    children_query: Query<&Children>,
+    children_query: Query<&ChildrenInner>,
 ) {
     for &ButtonActivatedEvent(button_id) in event_reader.read() {
         let (_, target_constraint, _) = button_query.get(button_id).unwrap();

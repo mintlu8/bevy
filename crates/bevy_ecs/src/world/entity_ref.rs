@@ -1044,7 +1044,7 @@ impl<'w> EntityWorldMut<'w> {
     /// Despawns the current entity.
     ///
     /// See [`World::despawn`] for more details.
-    pub fn despawn(self) {
+    pub unsafe fn despawn(self) {
         let world = self.world;
         world.flush_entities();
         let archetype = &world.archetypes[self.location.archetype_id];
@@ -2560,7 +2560,7 @@ mod tests {
         // archetype with [e2, e1]
         // table with [e1, e2]
 
-        world.entity_mut(e2).despawn();
+        unsafe {world.entity_mut(e2).despawn()};
 
         assert_eq!(world.entity(e1).get::<Dense>().unwrap(), &Dense(0));
     }
@@ -2584,7 +2584,7 @@ mod tests {
         // archetype with [e2, e1]
         // table with [e1, e2]
 
-        world.entity_mut(e1).despawn();
+        unsafe {world.entity_mut(e1).despawn()};
 
         assert_eq!(world.entity(e2).get::<Dense>().unwrap(), &Dense(1));
     }

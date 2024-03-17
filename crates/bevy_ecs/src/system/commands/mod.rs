@@ -857,7 +857,7 @@ impl EntityCommands<'_> {
     /// }
     /// # bevy_ecs::system::assert_is_system(remove_character_system);
     /// ```
-    pub fn despawn(&mut self) {
+    pub unsafe fn despawn(&mut self) {
         self.add(despawn);
     }
 
@@ -1009,7 +1009,7 @@ where
 /// This won't clean up external references to the entity (such as parent-child relationships
 /// if you're using `bevy_hierarchy`), which may leave the world in an invalid state.
 fn despawn(entity: Entity, world: &mut World) {
-    world.despawn(entity);
+    unsafe {world.despawn(entity)};
 }
 
 /// An [`EntityCommand`] that adds the components in a [`Bundle`] to an entity.
@@ -1136,8 +1136,8 @@ mod tests {
         // test entity despawn
         {
             let mut commands = Commands::new(&mut command_queue, &world);
-            commands.entity(entity).despawn();
-            commands.entity(entity).despawn(); // double despawn shouldn't panic
+            unsafe {commands.entity(entity).despawn();}
+            unsafe {commands.entity(entity).despawn();} // double despawn shouldn't panic
         }
         command_queue.apply(&mut world);
         let results2 = world

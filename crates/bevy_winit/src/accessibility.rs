@@ -22,7 +22,7 @@ use bevy_ecs::{
     schedule::IntoSystemConfigs,
     system::{NonSend, NonSendMut, Query, Res, ResMut, Resource},
 };
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::{ChildrenInner, Parent};
 use bevy_window::{PrimaryWindow, Window, WindowClosed};
 
 /// Maps window entities to their `AccessKit` [`Adapter`]s.
@@ -81,7 +81,7 @@ fn update_accessibility_nodes(
     nodes: Query<(
         Entity,
         &AccessibilityNode,
-        Option<&Children>,
+        Option<&ChildrenInner>,
         Option<&Parent>,
     )>,
     node_entities: Query<Entity, With<AccessibilityNode>>,
@@ -109,7 +109,7 @@ fn update_adapter(
     nodes: Query<(
         Entity,
         &AccessibilityNode,
-        Option<&Children>,
+        Option<&ChildrenInner>,
         Option<&Parent>,
     )>,
     node_entities: Query<Entity, With<AccessibilityNode>>,
@@ -163,7 +163,7 @@ fn queue_node_for_update(
 
 #[inline]
 fn add_children_nodes(
-    children: Option<&Children>,
+    children: Option<&ChildrenInner>,
     node_entities: &Query<Entity, With<AccessibilityNode>>,
     node: &mut NodeBuilder,
 ) {

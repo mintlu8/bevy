@@ -87,7 +87,7 @@ pub struct HierarchyPlugin;
 
 impl Plugin for HierarchyPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Children>()
+        app.register_type::<ChildrenInner>()
             .register_type::<Parent>()
             .add_event::<HierarchyEvent>();
     }

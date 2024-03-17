@@ -34,7 +34,7 @@ pub fn ui_stack_system(
     mut ui_stack: ResMut<UiStack>,
     root_node_query: Query<Entity, (With<Node>, Without<Parent>)>,
     zindex_query: Query<&ZIndex, With<Node>>,
-    children_query: Query<&Children>,
+    children_query: Query<&ChildrenInner>,
     mut update_query: Query<&mut Node>,
 ) {
     // Generate `StackingContext` tree
@@ -67,7 +67,7 @@ pub fn ui_stack_system(
 /// Generate z-index based UI node tree
 fn insert_context_hierarchy(
     zindex_query: &Query<&ZIndex, With<Node>>,
-    children_query: &Query<&Children>,
+    children_query: &Query<&ChildrenInner>,
     entity: Entity,
     global_context: &mut StackingContext,
     parent_context: Option<&mut StackingContext>,

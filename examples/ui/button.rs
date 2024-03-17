@@ -19,7 +19,7 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
 fn button_system(
     mut interaction_query: Query<
-        (&Interaction, &mut UiImage, &mut BorderColor, &Children),
+        (&Interaction, &mut UiImage, &mut BorderColor, &ChildrenInner),
         (Changed<Interaction>, With<Button>),
     >,
     mut text_query: Query<&mut Text>,

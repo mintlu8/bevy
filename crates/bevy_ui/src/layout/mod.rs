@@ -11,7 +11,7 @@ use bevy_ecs::{
     system::{Query, Res, ResMut, Resource, SystemParam},
     world::Ref,
 };
-use bevy_hierarchy::{Children, Parent};
+use bevy_hierarchy::{ChildrenInner, Parent};
 use bevy_math::{UVec2, Vec2};
 use bevy_render::camera::{Camera, NormalizedRenderTarget};
 use bevy_transform::components::Transform;
@@ -116,7 +116,7 @@ impl UiSurface {
     }
 
     /// Update the children of the taffy node corresponding to the given [`Entity`].
-    pub fn update_children(&mut self, entity: Entity, children: &Children) {
+    pub fn update_children(&mut self, entity: Entity, children: &ChildrenInner) {
         let mut taffy_children = Vec::with_capacity(children.len());
         for child in children {
             if let Some(taffy_node) = self.entity_to_taffy.get(child) {
@@ -262,7 +262,7 @@ pub enum LayoutError {
 #[derive(SystemParam)]
 pub struct UiLayoutSystemRemovedComponentParam<'w, 's> {
     removed_cameras: RemovedComponents<'w, 's, Camera>,
-    removed_children: RemovedComponents<'w, 's, Children>,
+    removed_children: RemovedComponents<'w, 's, ChildrenInner>,
     removed_content_sizes: RemovedComponents<'w, 's, ContentSize>,
     removed_nodes: RemovedComponents<'w, 's, Node>,
 }
@@ -280,8 +280,8 @@ pub fn ui_layout_system(
     root_node_query: Query<(Entity, Option<&TargetCamera>), (With<Node>, Without<Parent>)>,
     style_query: Query<(Entity, Ref<Style>, Option<&TargetCamera>), With<Node>>,
     mut measure_query: Query<(Entity, &mut ContentSize)>,
-    children_query: Query<(Entity, Ref<Children>), With<Node>>,
-    just_children_query: Query<&Children>,
+    children_query: Query<(Entity, Ref<ChildrenInner>), With<Node>>,
+    just_children_query: Query<&ChildrenInner>,
     mut removed_components: UiLayoutSystemRemovedComponentParam,
     mut node_transform_query: Query<(&mut Node, &mut Transform)>,
 ) {
@@ -426,7 +426,7 @@ pub fn ui_layout_system(
         entity: Entity,
         ui_surface: &UiSurface,
         node_transform_query: &mut Query<(&mut Node, &mut Transform)>,
-        children_query: &Query<&Children>,
+        children_query: &Query<&ChildrenInner>,
         inverse_target_scale_factor: f32,
         parent_size: Vec2,
         mut absolute_location: Vec2,
@@ -550,7 +550,7 @@ mod tests {
     use bevy_ecs::world::World;
     use bevy_hierarchy::despawn_with_children_recursive;
     use bevy_hierarchy::BuildWorldChildren;
-    use bevy_hierarchy::Children;
+    use bevy_hierarchy::ChildrenInner;
     use bevy_math::Vec2;
     use bevy_math::{vec2, UVec2};
     use bevy_render::camera::ManualTextureViews;
@@ -1103,7 +1103,7 @@ mod tests {
 
         let children = world
             .entity(parent)
-            .get::<Children>()
+            .get::<ChildrenInner>()
             .unwrap()
             .iter()
             .copied()
